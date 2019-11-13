@@ -9,7 +9,7 @@ class View(Tk):
     def __init__(self, controller):
         Tk.__init__(self)
         self.definition = Text(self, wrap='word')
-        self.additional_info = Text(self, wrap='word')
+        self.additional_info = Text(self, wrap='word', height=5)
         self.textvariable = StringVar()
         self.controller = controller
         self.table = ttk.Treeview(self, columns=2)
