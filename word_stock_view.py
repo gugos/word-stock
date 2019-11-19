@@ -1,12 +1,15 @@
-import controller
 from quiz_view import QuizView
 from db_manager import DBManager
 import tkinter.messagebox as tmb
-from tkinter import Tk, Text, Entry, Button, Label, Scrollbar, StringVar, ttk, Frame, Toplevel
+from tkinter import Tk, Text, Entry, Button, Label, Scrollbar, StringVar, ttk, Frame, PhotoImage
 import string
+import csv
+import matplotlib.pyplot as plt
+
+QUIZ_COUNT = 24
 
 
-class View(Tk):
+class WordStockView(Tk):
     def __init__(self, controller):
         Tk.__init__(self)
         self.controller = controller
@@ -14,6 +17,7 @@ class View(Tk):
         self.current_records = []
         self.create_gui()
         self.resizable(False, False)
+        self.protocol('WM_DELETE_WINDOW', self.on_closing)
 
     def create_gui(self):
         Label(self, text='Find word definition:').grid(row=0, sticky='w')
@@ -32,12 +36,14 @@ class View(Tk):
         frame = Frame(self)
         frame.grid(row=6, column=0, columnspan=2, sticky='nsew')
         frame.grid_rowconfigure(0, weight=1)
-        for column in range(4):
+        for column in range(1, 5):
             frame.grid_columnconfigure(column, weight=1)
-        Button(frame, text='Quiz', command=self.on_button_test_clicked).grid(row=0, column=0, sticky='nsew')
-        Button(frame, text='Delete', command=self.on_button_delete_clicked).grid(row=0, column=1, sticky='nsew')
-        Button(frame, text='Edit', command=self.on_button_edit_clicked).grid(row=0, column=2, sticky='nsew')
-        Button(frame, text='Save', command=self.on_button_save_clicked).grid(row=0, column=3, sticky='nsew')
+        self.image = PhotoImage(file='icons/stat_icon.png')
+        Button(frame, image=self.image, command=self.on_button_statistics_clicked).grid(row=0, column=0, sticky='nsew')
+        Button(frame, text='Quiz', command=self.on_button_quiz_clicked).grid(row=0, column=1, sticky='nsew')
+        Button(frame, text='Delete', command=self.on_button_delete_clicked).grid(row=0, column=2, sticky='nsew')
+        Button(frame, text='Edit', command=self.on_button_edit_clicked).grid(row=0, column=3, sticky='nsew')
+        Button(frame, text='Save', command=self.on_button_save_clicked).grid(row=0, column=4, sticky='nsew')
 
     def create_text_widget(self, text_widget, row=0, column=0, columnspan=0):
         text_widget.grid(row=row, column=column, columnspan=columnspan)
@@ -154,9 +160,32 @@ class View(Tk):
         self.db_manager.delete_record(self.get_tablename(word), word)
         self.view_table(self.get_tablename(word))
 
-    def on_button_test_clicked(self):
-        quiz = QuizView(self.db_manager)
+    def on_button_quiz_clicked(self):
+        records = self.db_manager.get_records_count()
+        if records < QUIZ_COUNT:
+            tmb.showwarning('Warning', f'Not enough records in db_dictionary.\nAt least {QUIZ_COUNT} records required.')
+            return False
+        quiz = QuizView(self.db_manager, QUIZ_COUNT)
         quiz.resizable(False, False)
+
+    def on_button_statistics_clicked(self):
+        if plt.get_fignums():
+            return
+        y = []
+        x = []
+        with open('statistics.csv') as stat_file:
+            stat_reader = csv.reader(stat_file)
+            for num, item in enumerate(stat_reader):
+                y.append(float(item[0]))
+                x.append(num)
+        if not y:
+            tmb.showwarning('Warning', 'There are no results in statistics.')
+            return
+        plt.plot(x, y)
+        plt.yticks([i for i in range(101) if not i % 10])
+        # plt.xticks([i for i in range(len(x) + 1) if not i % 10])
+        plt.xticks([])
+        plt.show()
 
     def retrieve_text(self, text_widget):
         return text_widget.get('1.0', 'end')
@@ -174,11 +203,6 @@ class View(Tk):
                 self.additional_info.delete('1.0', 'end')
                 self.additional_info.insert('insert', record[2])
 
-
-def main():
-    view = View(controller.Controller())
-    view.mainloop()
-
-
-if __name__ == '__main__':
-    main()
+    def on_closing(self):
+        plt.close()
+        self.destroy()
