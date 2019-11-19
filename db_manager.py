@@ -1,4 +1,5 @@
 import sqlite3
+import string
 
 DB_NAME = 'db_dictionary'
 
@@ -16,7 +17,11 @@ class DBManager:
 
     def get_records(self, table_name):
         query = f'SELECT * FROM {table_name} ORDER BY word desc'
-        return self.execute_db_query(query)
+        result = self.execute_db_query(query)
+        records = []
+        for record in result:
+            records.append(record)
+        return records
 
     def save_record(self, table_name, parameters):
         query = f'INSERT INTO {table_name} VALUES(?, ?, ?, ?)'
@@ -36,8 +41,47 @@ class DBManager:
         for record in result:
             return True if 1 in record else False
 
+    def get_records_count(self):
+        count = 0
+        for table_name in list(string.ascii_uppercase):
+            query = f'SELECT COUNT(*) FROM {table_name}'
+            result = self.execute_db_query(query)
+            for record in result:
+                count += record[0]
+        return count
+
+    def get_records_count_by_score_range(self, parameters):
+        count = 0
+        for table_name in list(string.ascii_uppercase):
+            query = f'SELECT COUNT(*) FROM {table_name} WHERE score BETWEEN ? AND ?'
+            result = self.execute_db_query(query, parameters)
+            for record in result:
+                count += record[0]
+        return count
+
+    def get_all_records_by_score_range(self, parameters):
+        records = []
+        for table_name in list(string.ascii_uppercase):
+            query = f'SELECT word, definition, score FROM {table_name} WHERE score BETWEEN ? AND ?'
+            result = self.execute_db_query(query, parameters)
+            for record in result:
+                records.append(record)
+        return records
+
+    def get_random_records_by_score_range(self, parameters):
+        records = []
+        for table_name in list(string.ascii_uppercase):
+            query = f'SELECT word, definition, score FROM {table_name} WHERE score BETWEEN ? AND ? ORDER BY RANDOM() LIMIT ?'
+            result = self.execute_db_query(query, parameters)
+            for record in result:
+                records.append(record)
+        return records
+
+    def update_score(self, table_name, word, score):
+        query = f'UPDATE {table_name} SET score={score} WHERE word=\'{word}\''
+        self.execute_db_query(query)
+
     # def create_tables(self):
-    #     import string
     #     for table_name in list(string.ascii_uppercase):
     #         query = f'create table {table_name}' \
     #                 f'(' \

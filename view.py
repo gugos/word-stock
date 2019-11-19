@@ -1,18 +1,15 @@
 import controller
+from quiz_view import QuizView
 from db_manager import DBManager
 import tkinter.messagebox as tmb
-from tkinter import Tk, Text, Entry, Button, Label, Scrollbar, StringVar, ttk, Frame
+from tkinter import Tk, Text, Entry, Button, Label, Scrollbar, StringVar, ttk, Frame, Toplevel
 import string
 
 
 class View(Tk):
     def __init__(self, controller):
         Tk.__init__(self)
-        self.definition = Text(self, wrap='word')
-        self.additional_info = Text(self, wrap='word', height=5)
-        self.textvariable = StringVar()
         self.controller = controller
-        self.table = ttk.Treeview(self, columns=2)
         self.db_manager = DBManager()
         self.current_records = []
         self.create_gui()
@@ -20,12 +17,15 @@ class View(Tk):
 
     def create_gui(self):
         Label(self, text='Find word definition:').grid(row=0, sticky='w')
+        self.textvariable = StringVar()
         Entry(self, textvariable=self.textvariable).grid(row=1, column=0, sticky='nsew')
         self.grid_columnconfigure(0, weight=1)
         Button(self, text='Find', command=self.on_button_find_clicked).grid(row=1, column=1, sticky='nsew')
         Label(self, text='Definition:').grid(row=2, column=0, sticky='w')
+        self.definition = Text(self, wrap='word')
         self.create_text_widget(self.definition, row=3, column=0, columnspan=2)
         Label(self, text='Additional information:').grid(row=4, column=0, sticky='w')
+        self.additional_info = Text(self, wrap='word', height=5)
         self.create_text_widget(self.additional_info, row=5, column=0, columnspan=2)
         self.create_table_view()
         self.create_table_switch_buttons()
@@ -34,7 +34,7 @@ class View(Tk):
         frame.grid_rowconfigure(0, weight=1)
         for column in range(4):
             frame.grid_columnconfigure(column, weight=1)
-        Button(frame, text='Test').grid(row=0, column=0, sticky='nsew')
+        Button(frame, text='Quiz', command=self.on_button_test_clicked).grid(row=0, column=0, sticky='nsew')
         Button(frame, text='Delete', command=self.on_button_delete_clicked).grid(row=0, column=1, sticky='nsew')
         Button(frame, text='Edit', command=self.on_button_edit_clicked).grid(row=0, column=2, sticky='nsew')
         Button(frame, text='Save', command=self.on_button_save_clicked).grid(row=0, column=3, sticky='nsew')
@@ -47,6 +47,7 @@ class View(Tk):
         text_widget['yscrollcommand'] = scrollbar.set
 
     def create_table_view(self):
+        self.table = ttk.Treeview(self, columns=2)
         self.table.grid(row=0, column=3, rowspan=6, sticky='nsew')
         scrollbar = Scrollbar(self, command=self.table.yview)
         scrollbar.grid(row=0, column=4, rowspan=6, sticky='nsew')
@@ -70,9 +71,8 @@ class View(Tk):
 
     def view_table(self, table_name):
         self.clear_all()
-        records = self.db_manager.get_records(table_name)
-        for row in records:
-            self.current_records.append(row)
+        self.current_records = self.db_manager.get_records(table_name)
+        for row in self.current_records:
             self.table.insert('', 0, text=row[0], values=row[3])
 
     def clear_all(self):
@@ -120,6 +120,9 @@ class View(Tk):
 
     def on_button_save_clicked(self):
         word = self.textvariable.get()
+        if self.record_exists(word):
+            tmb.showwarning('Warning', 'Record already exists')
+            return
         definition = self.retrieve_text(self.definition)
         additional_info = self.retrieve_text(self.additional_info)
         score = 0.0
@@ -150,6 +153,10 @@ class View(Tk):
         word = self.table.item(self.table.selection())['text']
         self.db_manager.delete_record(self.get_tablename(word), word)
         self.view_table(self.get_tablename(word))
+
+    def on_button_test_clicked(self):
+        quiz = QuizView(self.db_manager)
+        quiz.resizable(False, False)
 
     def retrieve_text(self, text_widget):
         return text_widget.get('1.0', 'end')
