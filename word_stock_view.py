@@ -5,8 +5,7 @@ from tkinter import Tk, Text, Entry, Button, Label, Scrollbar, StringVar, ttk, F
 import string
 import csv
 import matplotlib.pyplot as plt
-
-QUIZ_COUNT = 24
+from score_grade_system import TOTAL
 
 
 class WordStockView(Tk):
@@ -22,9 +21,11 @@ class WordStockView(Tk):
     def create_gui(self):
         Label(self, text='Find word definition:').grid(row=0, sticky='w')
         self.textvariable = StringVar()
-        Entry(self, textvariable=self.textvariable).grid(row=1, column=0, sticky='nsew')
+        validation = self.register(self.validate_input)
+        Entry(self, textvariable=self.textvariable, validate='key', validatecommand=(validation, '%S')).grid(row=1, column=0, sticky='nsew')
         self.grid_columnconfigure(0, weight=1)
-        Button(self, text='Find', command=self.on_button_find_clicked).grid(row=1, column=1, sticky='nsew')
+        self.search_image = PhotoImage(file='icons/search_icon.png')
+        Button(self, image=self.search_image, command=self.on_button_find_clicked).grid(row=1, column=1, sticky='nsew')
         Label(self, text='Definition:').grid(row=2, column=0, sticky='w')
         self.definition = Text(self, wrap='word')
         self.create_text_widget(self.definition, row=3, column=0, columnspan=2)
@@ -38,12 +39,16 @@ class WordStockView(Tk):
         frame.grid_rowconfigure(0, weight=1)
         for column in range(1, 5):
             frame.grid_columnconfigure(column, weight=1)
-        self.image = PhotoImage(file='icons/stat_icon.png')
-        Button(frame, image=self.image, command=self.on_button_statistics_clicked).grid(row=0, column=0, sticky='nsew')
+        self.stat_image = PhotoImage(file='icons/stat_icon.png')
+        Button(frame, image=self.stat_image, command=self.on_button_statistics_clicked).grid(row=0, column=0, sticky='nsew')
         Button(frame, text='Quiz', command=self.on_button_quiz_clicked).grid(row=0, column=1, sticky='nsew')
         Button(frame, text='Delete', command=self.on_button_delete_clicked).grid(row=0, column=2, sticky='nsew')
         Button(frame, text='Edit', command=self.on_button_edit_clicked).grid(row=0, column=3, sticky='nsew')
         Button(frame, text='Save', command=self.on_button_save_clicked).grid(row=0, column=4, sticky='nsew')
+
+    def validate_input(self, char):
+        valid_input = string.ascii_letters + '-'
+        return char in valid_input
 
     def create_text_widget(self, text_widget, row=0, column=0, columnspan=0):
         text_widget.grid(row=row, column=column, columnspan=columnspan)
@@ -125,7 +130,7 @@ class WordStockView(Tk):
                 self.table.selection_set(child)
 
     def on_button_save_clicked(self):
-        word = self.textvariable.get()
+        word = self.textvariable.get().lower()
         if self.record_exists(word):
             tmb.showwarning('Warning', 'Record already exists')
             return
@@ -135,7 +140,7 @@ class WordStockView(Tk):
         if not word or not definition:
             tmb.showwarning('Warning', 'Not all required fields are filled')
             return
-        parameters = (word, definition, additional_info, score)
+        parameters = (word, definition.strip(), additional_info.strip(), score)
         self.db_manager.save_record(self.get_tablename(word), parameters)
         self.check_item_and_update_view(word)
 
@@ -149,7 +154,7 @@ class WordStockView(Tk):
         if not definition:
             tmb.showwarning('Warning', 'Definition must be filled')
             return
-        parameters = (definition, additional_info, score)
+        parameters = (definition.strip(), additional_info.strip(), score)
         self.db_manager.update_record(self.get_tablename(word), word, parameters)
         self.check_item_and_update_view(word)
 
@@ -162,10 +167,10 @@ class WordStockView(Tk):
 
     def on_button_quiz_clicked(self):
         records = self.db_manager.get_records_count()
-        if records < QUIZ_COUNT:
-            tmb.showwarning('Warning', f'Not enough records in db_dictionary.\nAt least {QUIZ_COUNT} records required.')
+        if records < TOTAL:
+            tmb.showwarning('Warning', f'Not enough records in db_dictionary.\nAt least {TOTAL} records required.')
             return False
-        quiz = QuizView(self.db_manager, QUIZ_COUNT)
+        quiz = QuizView(self.db_manager)
         quiz.resizable(False, False)
 
     def on_button_statistics_clicked(self):

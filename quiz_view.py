@@ -5,13 +5,14 @@ from random import shuffle
 from difflib import SequenceMatcher
 from result_view import ResultView
 import csv
+import score_grade_system as SGS
 
 
 class QuizView(Toplevel):
-    def __init__(self, db_manager, quiz_count):
+    def __init__(self, db_manager):
         Toplevel.__init__(self)
         self.db_manager = db_manager
-        self.quiz_count = quiz_count
+        self.quiz_count = SGS.TOTAL
         self.quiz_list = []
         self.buttons_list = []
         self.saved_answers = {index: '' for index in range(0, self.quiz_count)}
@@ -60,31 +61,21 @@ class QuizView(Toplevel):
             else:
                 self.quiz_list.extend(self.db_manager.get_random_records_by_score_range((score.start, score.end, score.limit)))
             if len(self.quiz_list) >= self.quiz_count:
-                shuffle(self.quiz_list[:self.quiz_count])
+                del self.quiz_list[self.quiz_count:]
+                shuffle(self.quiz_list)
                 break
         return True
 
     def create_score_objects(self):
         score_objects = OrderedDict()
         Score = namedtuple('Score', ['name', 'start', 'end', 'limit', 'records_count'])
-        score_values = self.get_score_default_values()
+        score_values = SGS.get_score_grade_system()
         for key in score_values:
             name = key
             start, end, limit = score_values[key]
             records_count = self.db_manager.get_records_count_by_score_range((start, end))
             score_objects[key] = Score(name, start, end, limit, records_count)
         return score_objects
-
-    # TODO exclude dependencies
-    def get_score_default_values(self):
-        return OrderedDict(
-            F=(0, 39, 8),
-            E=(40, 59, 6),
-            D=(60, 69, 4),
-            C=(70, 79, 3),
-            B=(80, 89, 2),
-            A=(90, 100, 1),
-        )
 
     def on_finish_button_clicked(self):
         self.finish_button['state'] = 'disabled'

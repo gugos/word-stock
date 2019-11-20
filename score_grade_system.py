@@ -1,0 +1,32 @@
+from collections import OrderedDict
+
+TOTAL = 24
+F_RANGE_BOTTOM = 0
+F_RANGE_TOP = 39
+F_LIMIT = 8
+E_RANGE_BOTTOM = 40
+E_RANGE_TOP = 59
+E_LIMIT = 6
+D_RANGE_BOTTOM = 60
+D_RANGE_TOP = 69
+D_LIMIT = 4
+C_RANGE_BOTTOM = 70
+C_RANGE_TOP = 79
+C_LIMIT = 3
+B_RANGE_BOTTOM = 80
+B_RANGE_TOP = 89
+B_LIMIT = 2
+A_RANGE_BOTTOM = 90
+A_RANGE_TOP = 100
+A_LIMIT = 1
+
+
+def get_score_grade_system():
+    return OrderedDict(
+        F=(F_RANGE_BOTTOM, F_RANGE_TOP, F_LIMIT),
+        E=(E_RANGE_BOTTOM, E_RANGE_TOP, E_LIMIT),
+        D=(D_RANGE_BOTTOM, D_RANGE_TOP, D_LIMIT),
+        C=(C_RANGE_BOTTOM, C_RANGE_TOP, C_LIMIT),
+        B=(B_RANGE_BOTTOM, B_RANGE_TOP, B_LIMIT),
+        A=(A_RANGE_BOTTOM, A_RANGE_TOP, A_LIMIT),
+    )
